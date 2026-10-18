@@ -103,10 +103,11 @@ class GastosScreen extends GetView<GastosController> {
                   ),
                 ],
               ),
+            _buildFiltroCategorias(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.cargarGastos,
-                child: _buildLista(context, controller.gastos),
+                child: _buildLista(context, controller.gastosFiltrados),
               ),
             ),
           ],
@@ -115,7 +116,36 @@ class GastosScreen extends GetView<GastosController> {
     );
   }
 
+  Widget _buildFiltroCategorias() {
+    final categorias = ['Todas', ...controller.categoriasDeGastos];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: categorias.map((cat) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              label: Text(cat),
+              selected: controller.categoriaSeleccionada.value == cat,
+              onSelected: (_) => controller.cambiarFiltro(cat),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildLista(BuildContext context, List<Gasto> gastos) {
+    if (gastos.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 48),
+          Center(child: Text('No hay gastos en esta categoría')),
+        ],
+      );
+    }
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: gastos.length,
