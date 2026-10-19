@@ -152,7 +152,7 @@ void main() {
   testWidgets(
     'al elegir «comida», solo se ven los gastos de comida',
     (tester) async {
-      await montarConGastos([
+      await tester.runAsync(() => montarConGastos([
         {
           'id': 1,
           'descripcion': 'Ceviche de camarón',
@@ -174,7 +174,7 @@ void main() {
           'categoria': 'comida',
           'fecha': '2026-10-14',
         },
-      ]);
+      ]));
 
       await tester.pumpWidget(
         GetMaterialApp(
