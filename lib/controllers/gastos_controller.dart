@@ -26,6 +26,25 @@ class GastosController extends GetxController {
   /// Categorías que define el backend (`GET /gastos/categorias`).
   final RxList<String> categorias = <String>[].obs;
 
+  /// Categoría activa para el filtro («Todas» muestra todos los gastos).
+  final RxString categoriaSeleccionada = 'Todas'.obs;
+
+  /// Categorías únicas que aparecen en los gastos registrados actualmente.
+  List<String> get categoriasDeGastos => gastos.map((g) => g.categoria).toSet().toList();
+
+  /// Lista de gastos según la categoría seleccionada en el filtro.
+  List<Gasto> get gastosFiltrados {
+    if (categoriaSeleccionada.value == 'Todas') {
+      return gastos;
+    }
+    return gastos.where((g) => g.categoria == categoriaSeleccionada.value).toList();
+  }
+
+  /// Cambia la categoría de filtro actual.
+  void cambiarFiltro(String categoria) {
+    categoriaSeleccionada.value = categoria;
+  }
+
   /// `true` solo cuando la última carga exitosa vino de la caché local (el
   /// servidor no respondió): la UI lo usa para avisar «datos guardados».
   final RxBool desdeCache = false.obs;
@@ -74,6 +93,9 @@ class GastosController extends GetxController {
     gastos.value = lista;
     totalEnServidor.value = lista.length;
     desdeCache.value = cache;
+    if (categoriaSeleccionada.value != 'Todas' && !categoriasDeGastos.contains(categoriaSeleccionada.value)) {
+      categoriaSeleccionada.value = 'Todas';
+    }
   }
 
   Future<void> cargarCategorias() async {
@@ -126,6 +148,7 @@ class GastosController extends GetxController {
     await _repository.vaciar();
     gastos.clear();
     categorias.clear();
+    categoriaSeleccionada.value = 'Todas';
     totalEnServidor.value = 0;
     desdeCache.value = false;
     mensajeError.value = '';

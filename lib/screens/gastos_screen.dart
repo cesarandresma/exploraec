@@ -7,6 +7,7 @@ import '../controllers/gastos_controller.dart';
 import '../controllers/places_controller.dart' show EstadoCarga;
 import '../models/gasto.dart';
 import '../services/api_exception.dart';
+import 'pantalla_con_fallo.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_view.dart';
@@ -46,13 +47,26 @@ class GastosScreen extends GetView<GastosController> {
             onSelected: (valor) {
               if (valor == 'salir') auth.cerrarSesion();
               if (valor == 'invalidar') auth.invalidarTokenParaPruebas();
-                            if (valor == 'password') Get.to(() => const CambiarPasswordScreen());
+              if (valor == 'password') Get.to(() => const CambiarPasswordScreen());
+              // Solo práctica (Sesión 10, Paso 2): provocan errores a propósito.
+              if (valor == 'error_pantalla') Get.to(() => const PantallaConFallo());
+              if (valor == 'error_async') {
+                Future<void>.delayed(Duration.zero, () => throw StateError('Fallo asíncrono provocado a propósito'));
+              }
+              // Por qué: pantalla opcional con las licencias de los paquetes que usa la app.
+              // TODO(sesion-10) OPCIONAL Paso 10: descomenta la línea de abajo (abrir «Acerca de»).
+              // if (valor == 'acerca') showLicensePage(context: context, applicationName: 'ExploraEC', applicationVersion: '1.0.0');
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'password', child: Text('Cambiar contraseña')),
               const PopupMenuItem(value: 'salir', child: Text('Cerrar sesión')),
-              if (kDebugMode)
-                const PopupMenuItem(value: 'invalidar', child: Text('Invalidar token (solo práctica)')),
+              // TODO(sesion-10) OPCIONAL Paso 10: descomenta la línea de abajo (opción del menú).
+              // const PopupMenuItem(value: 'acerca', child: Text('Acerca de')),
+              if (kDebugMode) ...const [
+                PopupMenuItem(value: 'invalidar', child: Text('Invalidar token (solo práctica)')),
+                PopupMenuItem(value: 'error_pantalla', child: Text('Error de pantalla (solo práctica)')),
+                PopupMenuItem(value: 'error_async', child: Text('Error asíncrono (solo práctica)')),
+              ],
             ],
           ),
         ],
@@ -89,10 +103,11 @@ class GastosScreen extends GetView<GastosController> {
                   ),
                 ],
               ),
+            _buildFiltroCategorias(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.cargarGastos,
-                child: _buildLista(context, controller.gastos),
+                child: _buildLista(context, controller.gastosFiltrados),
               ),
             ),
           ],
@@ -101,7 +116,36 @@ class GastosScreen extends GetView<GastosController> {
     );
   }
 
+  Widget _buildFiltroCategorias() {
+    final categorias = ['Todas', ...controller.categoriasDeGastos];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: categorias.map((cat) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              label: Text(cat),
+              selected: controller.categoriaSeleccionada.value == cat,
+              onSelected: (_) => controller.cambiarFiltro(cat),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildLista(BuildContext context, List<Gasto> gastos) {
+    if (gastos.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 48),
+          Center(child: Text('No hay gastos en esta categoría')),
+        ],
+      );
+    }
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: gastos.length,
